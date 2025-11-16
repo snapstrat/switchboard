@@ -1,5 +1,5 @@
 <div align="center">
-    <h1><img alt="SwitchBoard Logo" src="switchboard-logo.png"/></h1>
+    <h1><img alt="SwitchBoard Logo" width="380" src="switchboard-logo.png"/></h1>
     <p><i>A simple, extensible, component-based Svelte 5 SPA router.</i></p>
     <img alt="License" src="https://img.shields.io/github/license/snapstrat/switchboard">
 </div>
@@ -227,7 +227,7 @@ For example, you could create an authenticated route component that checks if a 
 ```
 
 > App.svelte
-```
+```svelte
 <script lang="ts">
     import { BrowserRouter } from '@snapstrat/switchboard';
     import AuthenticatedRoute from './AuthenticatedRoute.svelte';
