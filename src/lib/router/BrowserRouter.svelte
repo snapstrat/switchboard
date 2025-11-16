@@ -30,10 +30,9 @@ and displays the appropriate component based on the current route.
   onMount(async () => {
     await tick();
     const params = parseWindowSearchParams();
+
     router.switchTo(window.location.pathname, params);
   });
-
-
 
   setRouterContext(router);
 
@@ -43,7 +42,6 @@ and displays the appropriate component based on the current route.
 </script>
 
 <Route404>
-  No Page
   <!-- This is blank because it's simply a fallback in case there is no 404 page -->
   <svelte:fragment />
 </Route404>

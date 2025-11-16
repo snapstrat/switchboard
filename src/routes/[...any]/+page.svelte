@@ -16,6 +16,12 @@
 	type str = string;
 </script>
 
+<!--
+This is NOT intended to be an example file, but rather a testbed for various routing features.
+
+As such, it has some pretty esoteric routes and components for the sake of testing and completeness.
+-->
+
 {#snippet identify(id: str)}
 	<PageInfo title={id} />
 	<p><strong {id}>{id}</strong></p>

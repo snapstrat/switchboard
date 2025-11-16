@@ -35,7 +35,7 @@
 			this._routes.push(route);
 		},
 		unregisterRoute(route: ApplicationRoute) {
-			getRouter().unregisterRoute(route);
+			getRouter()?.unregisterRoute(route);
 			this._routes.splice(this.routes.indexOf(route), 1);
 		},
 		renderer,
