@@ -1,83 +1,90 @@
-import { type Router, type ApplicationRoute, type ActiveRoute, RouteParam, type RouteParams } from '$lib';
+import {
+	type Router,
+	type ApplicationRoute,
+	type ActiveRoute,
+	RouteParam,
+	type RouteParams,
+	type RouterOptions,
+	RoutePath,
+	ROUTE_NOT_FOUND_KEY
+} from '$lib';
+import { parseWindowSearchParams } from '$lib/router/internals/paramsUtils';
 /**
  * A router used for an entire application on the web.
  */
-class WebRouterSvelte implements Router {
+class WebRouter implements Router {
 	private readonly _routes: ApplicationRoute[] = [];
-	public currentRoute: ActiveRoute | undefined = $state(undefined);
+	// this is undefined for a short time during initialization,
+	// after tick() it's always defined.
+	public currentRoute: ActiveRoute = $state.raw(undefined!);
 
-	public constructor() {
+	public readonly options: RouterOptions;
+
+	public constructor(options: RouterOptions) {
+		this.options = Object.freeze(options);
 		// we want to listen to popstate events to update the current route
 		// in this router
 		window.addEventListener('popstate', (ev) => {
 			ev.preventDefault();
-			this.switchTo(
-				window.location.pathname + window.location.search,
-				{},
-				false,
-			);
+			this.switchTo(window.location.pathname + window.location.search, {}, false);
 		});
+	}
+	public get params(): RouteParams {
+		return this.currentRoute?.queryParams ?? {};
+}
+	public get queryParams(): RouteParams {
+		return this.currentRoute?.queryParams ?? {};
 	}
 
 	public getRouteParam(name: string): string {
-		return this.currentRoute!.params.get(name)!;
+		return this.currentRoute!.params[name]!;
 	}
 
-	public getQueryParam(name: string): string {
-		return this.currentRoute!.queryParams.get(name)!;
+	public getQueryParam(name: string): string | undefined {
+		return this.currentRoute!.queryParams[name];
 	}
 
 	public refresh(): void {
-		this.switchTo(
-			this.currentRoute!.path,
-			this.currentRoute!.queryParams,
-			true,
-		);
+		this.switchTo(this.currentRoute!.path, this.currentRoute!.queryParams, true);
 	}
 
 	public switchTo(
 		path: string,
 		queryParams: Record<string, string> | Map<string, string> = {},
-		pushNewState: boolean = true,
+		pushNewState: boolean = true
 	): ActiveRoute {
-		const getQueryParam : (k: string) => string = queryParams instanceof Map
-			? (k) => queryParams.get(k)!
-			: (k) => queryParams[k]
+		const getQueryParam: (k: string) => string =
+			queryParams instanceof Map ? (k) => queryParams.get(k)! : (k) => queryParams[k];
 
-		const queryParamKeys = queryParams instanceof Map
-			? [...queryParams.keys()]
-			: Object.keys(queryParams)
+		const queryParamKeys =
+			queryParams instanceof Map ? [...queryParams.keys()] : Object.keys(queryParams);
 
 		// create a url to easily manipulate the route params
-		const url = new URL(window.location.href);
-		// remove old query params
-		url.searchParams.forEach((value, key) => {
-			url.searchParams.delete(key);
-		});
-		url.pathname = path.split('?')[0];
-		url.search = '?' + (path.split('?')[1] ?? '');
+		const url = new URL(window.location.origin + path);
+
 		const route = this.getRoute(url.pathname);
 
 		// set the query params in the url to the new ones
-		for (const key in queryParamKeys) {
+		for (const key of queryParamKeys) {
 			url.searchParams.set(key, getQueryParam(key));
 		}
 
+		path = url.pathname;
+
 		// create the new active route object
 		const params = this.createParams(path);
-		const queryParamsMap = new Map<string, string>();
+		const queryParamsMap : RouteParams = {};
 		url.searchParams.forEach((value, key) => {
-			queryParamsMap.set(key, value);
+			queryParamsMap[key] = value;
 		});
 		const selectedRoute = {
 			route,
 			params,
 			path: url.pathname,
-			queryParams: queryParamsMap,
+			queryParams: queryParamsMap
 		};
 		// push a new state if we need to
-		if (pushNewState)
-			window.history.pushState({}, '', url.pathname + url.search);
+		if (pushNewState) window.history.pushState({}, '', url);
 
 		this.currentRoute = selectedRoute;
 
@@ -88,11 +95,8 @@ class WebRouterSvelte implements Router {
 		this._routes.push(route);
 
 		// switch to the new route if it's a 404 route and the current route is undefined
-		if (
-			this.currentRoute?.route == undefined ||
-			this.currentRoute.route.path.is404
-		) {
-			this.switchTo(window.location.pathname, {}, false);
+		if (this.currentRoute?.route == undefined || this.currentRoute.route.path.is404) {
+			this.switchTo(window.location.pathname, parseWindowSearchParams(), false);
 		}
 	}
 
@@ -103,36 +107,58 @@ class WebRouterSvelte implements Router {
 	public getRoute(path: string): ApplicationRoute {
 		if (path == '/') {
 			return (
-				this._routes.find(
-					(route) => route.path.parts.length === 0 && !route.path.is404,
-				) ?? this._routes.find((route) => route.path.is404)!
+				this._routes.find((route) => route.path.parts.length === 0 && !route.path.is404) ??
+				this.getBase404()
 			);
 		}
+		// find the route that matches the path
 		const routes = this._routes.filter((route) => {
-			const parts = path.split('/');
-			if (parts.length != route.path.parts.length) return false;
-			return route.path.parts.every((part, index) => {
-				if (part instanceof RouteParam) return true;
-				return part == parts[index];
-			});
+			return this.matchesPath(route, path);
 		});
 
-		return routes[0] ?? this._routes.find((route) => route.path.is404)!;
+		return routes[0] ?? this.getClosest404(path)!;
+	}
+
+	private matchesPath(route: ApplicationRoute, path: string): boolean {
+		const parts = RoutePath.normalizePath(path).split('/');
+		if (parts.length != route.path.parts.length) return false;
+		return route.path.parts.every((part, index) => {
+			if (part instanceof RouteParam) return true;
+			return part == parts[index];
+		});
+	}
+	private getBase404(): ApplicationRoute {
+		// return the global 404 route
+		const normalizedKey = RoutePath.normalizePath(ROUTE_NOT_FOUND_KEY)
+		return this._routes.find((route) => route.path.is404 && route.path.parts[0] == normalizedKey)!;
+	}
+
+	private getClosest404(path: string): ApplicationRoute {
+		const splitPath = RoutePath.normalizePath(path).split('/');
+		for (let i = splitPath.length; i >= 0; i--) {
+			const subPath = '/' + splitPath.slice(0, i).join('/');
+			const path404 = RoutePath.concatPaths(subPath, ROUTE_NOT_FOUND_KEY);
+			const route = this._routes.find((route) => this.matchesPath(route, path404));
+			if (route) {
+				return route;
+			}
+		}
+		return this.getBase404();
 	}
 
 	// extract the route (not query) params from the path
 	public createParams(path: string): RouteParams {
-		if (path == '/') return new Map();
+		if (path == '/') return {};
 		const route = this.getRoute(path);
 		if (route == undefined) {
 			throw new Error(`Route not found for path: ${path}`);
 		}
 
-		const parts = path.split('/');
-		const params = new Map<string, string>();
+		const parts = RoutePath.normalizePath(path).split('/');
+		const params: RouteParams = {};
 		route.path.parts.forEach((part, index) => {
 			if (part instanceof RouteParam) {
-				params.set(part.name, parts[index]);
+				params[part.name] = parts[index];
 			}
 		});
 		return params;
@@ -142,7 +168,8 @@ class WebRouterSvelte implements Router {
 		const toRemove = this._routes.indexOf(route);
 		if (toRemove == -1) return;
 		if (this.currentRoute?.route == route) {
-			this.switchTo(this.currentRoute.path, {}, false);
+			// switch to what will now be a 404 page if we're currently here
+			this.switchTo(this.currentRoute.path, parseWindowSearchParams(), false);
 		}
 		this._routes.splice(toRemove, 1);
 	}
@@ -154,7 +181,9 @@ class WebRouterSvelte implements Router {
 
 /**
  * Creates a {@link Router} that interfaces with the Web Browser's history API.
+ *
+ * @param options Options for the router, such as base path or initial route.
  */
-export const createWebRouter = () : Router => {
-	return new WebRouterSvelte();
+export const createWebRouter = (options: RouterOptions = {}) : Router => {
+	return new WebRouter(options);
 }

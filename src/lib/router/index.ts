@@ -11,4 +11,10 @@ export * from './Route404.svelte'
 export { default as Route } from './Route.svelte'
 export * from './Route.svelte'
 
+export { default as PageInfo } from './PageInfo.svelte'
+export * from './PageInfo.svelte'
+
+export { default as Layout } from './Layout.svelte'
+export * from './Layout.svelte'
+
 export * from './router.svelte'

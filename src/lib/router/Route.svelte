@@ -1,57 +1,71 @@
-<svelte:options runes={true} />
+<!--
+@component
+The Route component is used to define a route in the application.
+It registers the route with the router when mounted and unregisters it when destroyed.
+Once registered, the route can be navigated to using the router's switchTo method.
 
+The children of this component make the content that will be displayed when the route is active.
+-->
 <script lang="ts" module>
+	import type { Snippet } from 'svelte';
+
 	export type RouteProps = {
 		path: string;
-		name?: string;
-		icon?: string;
 		children?: Snippet;
-		routerId?: AvailableContext;
 	}
 </script>
 
 <script lang="ts">
-  import { onMount, type Snippet } from 'svelte';
+  import { onMount } from 'svelte';
 	import {
-		type ApplicationRoute, getRouter,
-		RoutePath
-	} from './router.svelte';
+		type ApplicationRoute, getLayout, getRouter, ROUTE_NOT_FOUND_KEY, RoutePath
+	} from '$lib';
 
 
 
   let {
     path,
-    name,
-    icon,
     children,
-		routerId = "default",
   }: RouteProps = $props();
 
-	let router = getRouter(routerId);
+	let router = getRouter();
+
 
   onMount(() => {
     let route: ApplicationRoute;
+
+		const layout = getLayout()
+		const layoutPath = layout?.joinedPath ?? '';
+
+		const combinedPath = RoutePath.concatPaths(layoutPath, path);
+
+		const container = layout ?? router;
     // if this route is a 404 route, we need to unregister the old 404 route and use only this new one
-    if (path == '404') {
+    if (path == ROUTE_NOT_FOUND_KEY) {
       route = {
-        path: RoutePath.create404(),
+        path: RoutePath.fromString(combinedPath, true),
         component: children,
+				layout
       };
-      router.unregisterRoute(router.getRoute('404'));
-      router.registerRoute(route);
+			// replace the old 404 route in this layout or router
+			const old = router.getRoute(combinedPath);
+			container.unregisterRoute(old);
+			container.registerRoute(route);
     } else {
-      // if this route is not a 404 route, we need to unregister the old route if it exists and use only this new one
+
+			// if this route is not a 404 route, we need to unregister the old route if it exists and use only this new one
       route = {
-        path: RoutePath.fromString(path),
+        path: RoutePath.fromString(combinedPath),
         component: children,
+				layout
       };
-      if (!router.getRoute(path).path.is404) {
-        const old = router.getRoute(path);
-        router.unregisterRoute(old);
-        router.registerRoute(route);
+      if (!router.getRoute(combinedPath).path.is404) {
+        const old = router.getRoute(combinedPath);
+        container.unregisterRoute(old);
+        container.registerRoute(route);
         return;
       }
-      router.registerRoute(route);
+      container.registerRoute(route);
     }
   });
 </script>

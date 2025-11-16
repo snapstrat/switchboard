@@ -1,58 +1,241 @@
-# create-svelte
+<div align="center">
+    <h1><img alt="SwitchBoard Logo" src="switchboard-logo.png"/></h1>
+    <p><i>A simple, extensible, component-based Svelte 5 SPA router.</i></p>
+    <img alt="License" src="https://img.shields.io/github/license/snapstrat/switchboard">
+</div>
 
-Everything you need to build a Svelte library, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+# Features
 
-Read more about creating a library [in the docs](https://svelte.dev/docs/kit/packaging).
+- A declarative, component-based method to declare routes.
+- A simple API to programmatically navigate between routes.
+- Layouts, nested routes, and route parameters.
+- Svelte 5 compatibility, with TypeScript support.
 
-## Creating a project
+# Why Switchboard?
 
-If you're seeing this, you've probably already done this step. Congrats!
+Switchboard is designed to be a simple, extensible router for Svelte 5 applications. 
+Using composition and a declarative API, developers are able to quickly create SPA routes without the complexity of larger routing libraries, or dealing with SSR.
 
-```bash
-# create a new project in the current directory
-npx sv create
+Switchboard is ideal for applications which:
+- don't require server-side rendering.
+- want a simple, component-based routing solution.
+- want to stray away from strictly file-based routing systems, such as SvelteKit's routing.
+- want more flexibility in defining routes and layouts.
+- want to be able to define routes in a way that fits their application's architecture.
 
-# create a new project in my-app
-npx sv create my-app
+# Getting Started
+
+To install Switchboard, run:
+
+```sh
+# npm
+npm install @snapstrat/switchboard
+# yarn
+yarn add @snapstrat/switchboard
+# pnpm
+pnpm install @snapstrat/switchboard
+# bun
+bun install @snapstrat/switchboard
 ```
 
-## Developing
+# Basic Usage
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Switchboard exposes several components and functions to help you set up routing in your Svelte application.
 
-```bash
-npm run dev
+## Creating a Router
+Switchboard leaves the router setup to you. You can either use some form of global state management to hold a reference to it,
+or create it directly in your root component.
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+Switchboard includes a `createWebRouter()` function to create a router instance that works with the browser's history API.
+
+### Global Access
+> main.ts
+
+```ts
+import App from './App.svelte';
+import { createWebRouter } from '@snapstrat/switchboard';
+
+// now anything can import router from here to access the router!
+export const router = createWebRouter();
+
+mount(App, {
+	target: document.body,
+});
 ```
 
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
+### Creation in Root Component
+> App.svelte
+```svelte
+<script lang="ts">
+	import { BrowserRouter, createWebRouter } from '$lib';
+	import PersistenceLayout from './PersistenceLayout.svelte';
 
-## Building
+    // we can also create the router here!
+	const router = createWebRouter()
+</script>
 
-To build your library:
-
-```bash
-npm run package
+<!-- all BrowserRouter needs is a Router instance, constructed from anywhere. -->
+<!-- any component nested in BrowserRouter gets access to getRouter() using Svelte contexts. -->
+<BrowserRouter {router}>
+    <!-- Your routes go here -->
+</BrowserRouter>
 ```
 
-To create a production version of your showcase app:
+## Defining Routes
+Switchboard is very unopinionated about how you define your routes. 
+The main building blocks are the `Route`, `Layout`, `PageInfo` and `Link` components.
 
-```bash
-npm run build
+```svelte
+<script lang="ts">
+    import { BrowserRouter, Route, Link } from '@snapstrat/switchboard'
+    
+    // maybe make a router here? or import one.
+</script>
+
+<BrowserRouter router={your_router_instance}>
+    <Route path="/">
+        <h1>Home Page</h1>
+    </Route>
+
+    <Route path="/users/:id">
+        <h1>You're looking for a user with the id: {getRouteParams().id}</h1>
+    </Route>
+    
+    <!-- You can use Route404 to catch all unmatched routes -->
+    <Route404>
+        <h1>404 - Page Not Found</h1>
+    </Route404>
+</BrowserRouter>
 ```
 
-You can preview the production build with `npm run preview`.
+### Links
+Links can be created using the `Link` component, which is a very, very thin wrapper around an `<a>` tag.
+Alternatively, you can use the `Router.switchTo()` method to programmatically navigate between routes, or use
+the `{@attach href('my/path')}` attachment to attach hrefs to any element.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```svelte
 
-## Publishing
+<script lang="ts">
+	import { Link } from '@snapstrat/switchboard';
+</script>
 
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
+// both are equivalent:
+<Link href="/some/path">Go to Some Path</Link>
+<a {@attach href("/some/path")}>Go to Some Path</a>
 
-To publish your library to [npm](https://www.npmjs.com):
+// not recommended for accessibility, but possible:
+<button on:click={() => router.switchTo('/some/path')}>
+    Go to Some Path
+</button>
 
-```bash
-npm publish
+// not recommended at all, this will reload the page and lose SPA state:
+<a href="/some/path">Go to Some Path</a>
+```
+
+### PageInfo
+
+The `PageInfo` component allows you to declaratively set metadata for the current page, such as the document title and meta tags.
+
+```svelte
+<script lang="ts">
+    import { PageInfo, Route } from '@snapstrat/switchboard';
+</script>
+
+<Route path="/my-cool-page">
+    <PageInfo title="My Page Title" icon="/page-icon.ico" />
+</Route>
+```
+
+### Layouts 
+Layouts can be used to simplify routes that share common structure. State of a layout
+will persist between __nested__ route changes. 
+For example, if you start at `/user/1`, modify some state in the layout, then navigate to `/user/1/profile`, the layout state will persist.
+However, if you navigate to `/user/2`, or `/`, or `/any-other-route-outside-of-this-layout` the layout will be re-created and state will be destroyed since the route parameter changed.
+
+```svelte
+<BrowserRouter router={your_router_instance}>
+    <!-- Layouts can have parameters too! -->
+    <!-- Layouts have two snippets they take in: `routes` and `layout` -->
+    <Layout path="/user/:id">
+        <!-- layout() holds the common layout structure. -->
+        {#snippet layout(route: Snippet)}
+            <p>You're looking at something for {getRouteParams().id}!</h1>
+            {@render route()}
+        {/snippet}
+        
+        <!-- routes() holds all nested routes -->
+        {#snippet routes()}
+            <Route path="profile">
+                <h2>This is the profile page for user {getRouteParams().id}!</h2>
+            </Route>
+            
+            <Route path="settings">
+                <h2>This is the settings page for user {getRouteParams().id}!</h2>
+            </Route>
+            
+            <!-- in this context, / will match for /user/:id/ -->
+            <Route path="/">
+                <h2>This is the settings page for user {getRouteParams().id}!</h2>
+            </Route>
+            
+            <!-- You can also have a Route404 for unmatched nested routes. -->
+            <Route404>
+                <h1>404 - User Not Found</h1>
+            </Route404>
+        {/snippet}
+    </Layout>
+    
+    <!-- You can use Route404 to catch all unmatched routes. -->
+    <Route404>
+        <h1>404 - Page Not Found</h1>
+    </Route404>
+</BrowserRouter>
+```
+
+## Advanced Usage
+Advanced usage of Switchboard comes from the natural composition of its components. You can create your own custom route components, layouts, and even
+extend the router itself to add functionality.
+
+Any Route or Layout can be declared anywhere that is within a `BrowserRouter`, or a `Layout` component, and will function as expected, no matter how these
+are nested, constructed, composed, or imported.
+
+### Custom Route Component
+You can wrap around the `Route` component to create your own custom route components. 
+
+For example, you could create an authenticated route component that checks if a user is logged in before rendering the route.
+
+> [!CAUTION]
+> Note that this isn't inherently secure, as all routing is done client-side. Make sure that when dealing with sensitive data, you also have server-side checks in place.
+
+> AuthenticatedRoute.svelte
+```svelte
+<script lang="ts">
+    import { Route, getRouter } from '@snapstrat/switchboard';
+    import { onMount } from 'svelte';
+    import { isUserAuthed } from './auth'; // your auth logic here
+    
+    const { children, path } = $props();
+</script>
+
+<Route path={path}>
+    {#if isUserAuthed()}
+        {@render children()}
+    {:else}
+        <h1>Please log in to access this page.</h1>
+    {/if}
+</Route>
+```
+
+> App.svelte
+```
+<script lang="ts">
+    import { BrowserRouter } from '@snapstrat/switchboard';
+    import AuthenticatedRoute from './AuthenticatedRoute.svelte';
+</script>
+
+<BrowserRouter router={your_router_instance}>
+    <AuthenticatedRoute path="/dashboard">
+        <h1>Welcome to your dashboard!</h1>
+    </AuthenticatedRoute>
+</BrowserRouter>
 ```

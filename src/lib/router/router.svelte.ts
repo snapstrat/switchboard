@@ -1,4 +1,4 @@
-import { getContext, setContext, type Snippet } from 'svelte';
+import { getContext, hasContext, setContext, type Snippet } from 'svelte';
 import type { Attachment } from 'svelte/attachments';
 
 // A part of a route. Can either be a string (static), or a RouteParam (dynamic).
@@ -26,10 +26,11 @@ export class RoutePath {
     public readonly is404: boolean = false,
   ) {}
 
-  public static fromString(path: string): RoutePath {
-    if (path == '/') {
-      return new RoutePath([]);
+  public static fromString(path: string, is404: boolean = false): RoutePath {
+    if (path == '/' || path === '') {
+      return new RoutePath([], is404);
     }
+		path = RoutePath.normalizePath(path)
     return new RoutePath(
       path.split('/').map((part) => {
         if (part.startsWith(':')) {
@@ -38,6 +39,7 @@ export class RoutePath {
           return part;
         }
       }),
+			is404
     );
   }
 
@@ -45,9 +47,35 @@ export class RoutePath {
     return new RoutePath(parts);
   }
 
-  public static create404() {
-    return new RoutePath([], true);
+  public static create404(layout: readonly RoutePart[] = []): RoutePath {
+    return new RoutePath(layout, true);
   }
+
+	public static readonly concatPaths = (base: string, ...rest: string[]): string => {
+		base = RoutePath.normalizePath(base);
+		const normalizedRest = rest.map(p => RoutePath.normalizePath(p));
+		const restStr = normalizedRest.join('/');
+
+		if (base === '') {
+			return RoutePath.normalizePath(restStr);
+		}
+
+		return RoutePath.normalizePath([...base.split("/"), ...restStr.split("/")].join("/"));
+	}
+
+	/**
+	 * Normalize a path by removing leading and trailing slashes.
+	 * @param path The path to normalize.
+	 */
+	public static readonly normalizePath = (path: string) : string => {
+		if (path.startsWith('/')) {
+			path = path.substring(1); // remove leading slash
+		}
+		if (path.endsWith('/')) {
+			path = path.slice(0, -1); // remove trailing slash
+		}
+		return path;
+	}
 }
 
 /**
@@ -55,6 +83,7 @@ export class RoutePath {
  */
 export interface ApplicationRoute {
   path: RoutePath;
+	layout?: LayoutData;
   name?: string;
   parents?: string[];
   component?: Snippet;
@@ -67,10 +96,49 @@ export type RouterEvents = {
   ) => void;
 };
 
+export type RouterOptions = Partial<{
+	/**
+	 * The default page title to be used when no specific title is set for a route.
+	 */
+	defaultTitle: string;
+
+	basePath: string;
+}>
+
+export function defaultRouterOptions(): RouterOptions {
+	return {
+		defaultTitle: 'App',
+	};
+}
+
+export interface RouteContainer {
+	/**
+	 * Create a route.
+	 * @param route
+	 * @param layout
+	 */
+	registerRoute(route: ApplicationRoute, layout?: LayoutData): void;
+
+	/**
+	 * Remove a route
+	 * @param route
+	 * @param layout
+	 */
+	unregisterRoute(route: ApplicationRoute, layout?: LayoutData): void;
+
+}
+
 /**
  * A router used to switch between routes in an application.
  */
-export interface Router {
+export interface Router extends RouteContainer {
+	readonly options: RouterOptions;
+
+	/** Params specified in the route with : syntax, like /users/:userId */
+	params: RouteParams;
+	/** Query params specified after the route with ?, like /users/1234?showFullName=true */
+	queryParams: RouteParams;
+
   /**
    * Switch to a route.
    * @param path
@@ -84,21 +152,9 @@ export interface Router {
   ): ActiveRoute;
 
   /**
-   * Create a route.
-   * @param route
-   */
-  registerRoute(route: ApplicationRoute): void;
-
-  /**
-   * Remove a route
-   * @param route
-   */
-  unregisterRoute(route: ApplicationRoute): void;
-
-  /**
    * Get the current route.
    */
-  currentRoute: ActiveRoute | undefined;
+  currentRoute: ActiveRoute;
 
   getRoute(path: string): ApplicationRoute;
 
@@ -125,10 +181,13 @@ export interface Router {
    * Get a query parameter by name from the current route.
    * @param name
    */
-  getQueryParam(name: string): string;
+  getQueryParam(name: string): string | undefined;
 }
 
 export interface ActiveRoute {
+  /**
+   * The route object that is currently active.
+   */
   route: ApplicationRoute;
   /**
    * Note: this may differ from route.path if the route is a 404 route.
@@ -141,31 +200,86 @@ export interface ActiveRoute {
   queryParams: RouteParams;
 }
 
-export type RouteParams = Map<string, string>;
+export type RouteParams = { [key: string]: string };
 
-export const ROUTER_CONTEXT_KEY = 'switchboard::router::';
-export const ROUTER_DEFAULT = 'default';
+export const ROUTER_CONTEXT_KEY = 'switchboard::router';
+export const LAYOUT_CONTEXT_KEY = 'switchboard::layout';
+export const ROUTE_NOT_FOUND_KEY = '__switchboard__404';
 
-export type AvailableContext = keyof Switchboard.Contexts;
+export type LayoutSnippet = Snippet<[Snippet]>
 
-export type ContextsMap = {
-  [K in AvailableContext]: Switchboard.Contexts[K];
+export interface LayoutData extends RouteContainer {
+	path?: string;
+	parent?: LayoutData;
+	renderer: LayoutSnippet;
+	notFoundRoute?: ApplicationRoute;
+	joinedPath: string;
 }
 
-export function getRouter<Id extends AvailableContext = typeof ROUTER_DEFAULT>(identifier?: Id) : ContextsMap[Id] {
-  return getContext(ROUTER_CONTEXT_KEY + (identifier ?? ROUTER_DEFAULT));
+export function getLayout(): LayoutData | undefined {
+	return hasContext(LAYOUT_CONTEXT_KEY)
+		? getContext<LayoutData>(LAYOUT_CONTEXT_KEY)
+		: undefined;
 }
 
+export function setLayoutContext(layout: LayoutData | undefined) {
+	// set the layout in the context
+	setContext(LAYOUT_CONTEXT_KEY, layout);
+}
 
+export function getRouter<T extends Router = Router>() : T {
+  return getContext(ROUTER_CONTEXT_KEY);
+}
+
+export function getRouteParams(): RouteParams {
+	const router = getRouter();
+	return router.currentRoute.params;
+}
+
+export function getQueryParams(): RouteParams {
+	const router = getRouter();
+	return router.currentRoute.queryParams;
+}
 
 export function setRouterContext(
-  identifier: string = "default",
   router: Router,
 ): void {
   // set the router in the context
-  setContext(ROUTER_CONTEXT_KEY + identifier, router);
+  setContext(ROUTER_CONTEXT_KEY, router);
 }
 
-export const link: Attachment = () => {
+/**
+ * Create an attachment that sets the href of an anchor element
+ * and switches to the route when clicked.
+ * This is useful for creating links that work with the router, and won't cause a refresh when clicked.
+ * @param href The href to set on the anchor element.
+ *
+ * @see Link
+ */
+export const href = (href: string): Attachment<HTMLAnchorElement> => {
+  const router = getRouter();
+	return (element) => {
+    const handler = () => {
+      router.switchTo(href)
+    }
+		element.href = href;
+    element.addEventListener("click", handler)
+    element.addEventListener("keydown", handler)
 
+    return () => {
+			element.href = "";
+      element.removeEventListener("click", handler);
+      element.removeEventListener("keydown", handler);
+    };
+  }
+}
+
+export const getAllLayouts = (layout?: LayoutData): LayoutData[] => {
+	const list : LayoutData[] = []
+	if (!layout) return list;
+	while (layout) {
+		list.push(layout);
+		layout = layout.parent;
+	}
+	return list.reverse();
 }

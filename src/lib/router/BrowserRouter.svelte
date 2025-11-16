@@ -17,16 +17,16 @@ and displays the appropriate component based on the current route.
      */
     router: Router;
     children?: Snippet;
-    identifier?: string;
   };
 </script>
 
 <script lang="ts">
-  import { onMount, setContext, tick } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import Route from './Route.svelte';
-  import { Link, ROUTER_CONTEXT_KEY, ROUTER_DEFAULT } from './index';
+  import { setRouterContext, type LayoutData, getAllLayouts, ROUTE_NOT_FOUND_KEY } from './index';
+  import { parseWindowSearchParams } from '$lib/router/internals/paramsUtils';
 
-  let { router, children, identifier }: PageRouterProps = $props();
+  let { router, children }: PageRouterProps = $props();
 
   onMount(async () => {
     await tick();
@@ -34,26 +34,34 @@ and displays the appropriate component based on the current route.
     router.switchTo(window.location.pathname, params);
   });
 
-  function parseWindowSearchParams(): Record<string, string> {
-    const params: Record<string, string> = {};
 
-    new URL(window.location.href).searchParams.forEach((value, key) => {
-      params[key] = value;
-    });
 
-    return params;
-  }
+  setRouterContext(router);
 
-  setContext(ROUTER_CONTEXT_KEY + (identifier ?? ROUTER_DEFAULT), router);
+  const currentAppRoute = $derived(router.currentRoute?.route);
+  const layouts = $derived(getAllLayouts(currentAppRoute?.layout));
+
 </script>
 
-<Route path="404">
+<Route path={ROUTE_NOT_FOUND_KEY}>
   <!-- This is blank because it's simply a fallback in case there is no 404 page -->
   <svelte:fragment />
 </Route>
 
-<Link/>
-
 {@render children?.()}
 
-{@render router.currentRoute?.route?.component?.()}
+{#snippet layoutRender(remaining: LayoutData[])}
+  {#if remaining.length === 0}
+    {@render currentAppRoute?.component?.()}
+  {:else}
+    {@const next = remaining[0]}
+
+    {#snippet renderer()}
+      {@render layoutRender(remaining.slice(1))}
+    {/snippet}
+
+    {@render next.renderer(renderer)}
+  {/if}
+{/snippet}
+
+{@render layoutRender(layouts)}

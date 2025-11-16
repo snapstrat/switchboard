@@ -19,13 +19,21 @@ export default ts.config(
 		}
 	},
 	{
-		files: ['**/*.svelte'],
-
+		files: ["**/*.svelte", "**/*.svelte.ts"],
 		languageOptions: {
 			parserOptions: {
-				parser: ts.parser
+				projectService: true,
+				extraFileExtensions: [".svelte", ".svelte.ts"],
+				parser: ts.parser,
+				svelteFeatures: {
+					experimentalGenerics: true,
+				},
 			},
-			
+		},
+	},
+	{
+		rules: {
+			'svelte/prefer-svelte-reactivity': 'off'
 		}
 	},
 	{
