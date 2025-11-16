@@ -23,7 +23,7 @@ jobs:
           node-version: 22
           cache: "pnpm"
       - name: Install dependencies
-        run: pnpm ci
+        run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
       - name: Run Playwright tests
