@@ -1,5 +1,5 @@
 <div align="center">
-    <h1><img alt="SwitchBoard Logo" width="380" src="switchboard-logo.png"/></h1>
+    <h1><img alt="SwitchBoard Logo" width="480" src="switchboard-logo.png"/></h1>
     <p><i>A simple, extensible, component-based Svelte 5 SPA router.</i></p>
     <img alt="License" src="https://img.shields.io/github/license/snapstrat/switchboard">
 </div>
@@ -77,7 +77,7 @@ mount(App, {
 <!-- all BrowserRouter needs is a Router instance, constructed from anywhere. -->
 <!-- any component nested in BrowserRouter gets access to getRouter() using Svelte contexts. -->
 <BrowserRouter {router}>
-    <!-- Your routes go here -->
+    <!-- Your routes and layouts go here -->
 </BrowserRouter>
 ```
 
@@ -119,16 +119,16 @@ the `{@attach href('my/path')}` attachment to attach hrefs to any element.
 	import { Link } from '@snapstrat/switchboard';
 </script>
 
-// both are equivalent:
+<!-- both are equivalent: -->
 <Link href="/some/path">Go to Some Path</Link>
 <a {@attach href("/some/path")}>Go to Some Path</a>
 
-// not recommended for accessibility, but possible:
+<!-- not recommended for accessibility, but possible: -->
 <button on:click={() => router.switchTo('/some/path')}>
     Go to Some Path
 </button>
 
-// not recommended at all, this will reload the page and lose SPA state:
+<!-- not recommended at all, this will reload the page and lose SPA state: -->
 <a href="/some/path">Go to Some Path</a>
 ```
 
