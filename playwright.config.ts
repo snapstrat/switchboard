@@ -6,5 +6,6 @@ export default defineConfig({
 		port: 4173
 	},
 
-	testDir: 'e2e'
+	testDir: 'e2e',
+	reporter: 'html'
 });
