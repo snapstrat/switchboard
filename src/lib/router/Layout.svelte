@@ -7,16 +7,25 @@
 		path?: string;
 		layout: LayoutSnippet;
 		routes: Snippet;
+		ref?: LayoutData;
 	}
 </script>
 
 <script lang="ts">
 
-	import { type ApplicationRoute, getAllLayouts, getLayout, getRouter, type LayoutData, RoutePath } from '$lib';
+	import {
+		type ApplicationRoute,
+		getAllLayouts,
+		getLayout,
+		getRouter,
+		type LayoutData,
+		RoutePath,
+		type Router
+	} from '$lib';
 	import { setLayoutContext } from '$lib';
 	import { onDestroy } from 'svelte';
 
-	const { path, layout: renderer, routes }: LayoutProps = $props();
+	let { path, layout: renderer, routes, ref = $bindable() }: LayoutProps = $props();
 
 	type LayoutInternals = { routes: ApplicationRoute[], _routes: ApplicationRoute[] }
 	const layoutData: LayoutData & LayoutInternals = {
@@ -45,8 +54,11 @@
 				.filter((p) => p !== undefined && p !== '')
 				.join('/');
 		},
+		isRouter(): this is Router { return false; }
 	}
 	setLayoutContext(layoutData)
+
+	ref = layoutData;
 
 	onDestroy(() => {
 		setLayoutContext(layoutData.parent);

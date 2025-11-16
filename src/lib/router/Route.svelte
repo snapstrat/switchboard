@@ -8,9 +8,11 @@ The children of this component make the content that will be displayed when the 
 -->
 <script lang="ts" module>
 	import type { Snippet } from 'svelte';
+	import type { RouteContainer } from '$lib/router/router.svelte';
 
 	export type RouteProps = {
 		path: string;
+		container?: RouteContainer;
 		children?: Snippet;
 	}
 </script>
@@ -18,11 +20,12 @@ The children of this component make the content that will be displayed when the 
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import {
-		type ApplicationRoute, getLayout, getRouteContainer, getRouter, RoutePath
+		type ApplicationRoute, getLayout, getRouteContainer, getRouter, type LayoutData, RoutePath
 	} from '$lib';
 
   let {
     path,
+		container,
     children,
   }: RouteProps = $props();
 
@@ -31,20 +34,19 @@ The children of this component make the content that will be displayed when the 
 	let route : ApplicationRoute | undefined;
 
   onMount(() => {
+		const layout = getLayout();
 
-		const layout = getLayout()
+		container ??= getRouteContainer();
+
 		const layoutPath = layout?.joinedPath ?? '';
 
 		const combinedPath = RoutePath.concatPaths(layoutPath, path);
 
-		const container = getRouteContainer();
-
 		route = {
 			path: RoutePath.fromString(combinedPath),
 			component: children,
-			layout
+			layout: container.isRouter() ? undefined : container as LayoutData
 		};
-		console.log("Registering normal route:", route);
 		container.registerRoute(route);
   });
 

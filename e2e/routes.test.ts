@@ -131,3 +131,37 @@ test('Overriding a layout route parameter with a new route works', async ({ page
 	await expect(page.locator('#override-layout-param-not-layout')).toBeVisible();
 	await expect(page.locator('#override-layout-param-not-layout-value')).toHaveText('(no-value)');
 })
+
+test('Escaping layouts works', async ({ page }) => {
+	// Navigate to layout-to-escape root
+	await page.goto('/layout-to-escape');
+	await expect(page.locator('#layout-to-escape')).toBeVisible();
+
+	// Navigate to inner route, make sure that's fine
+	await page.goto('/layout-to-escape/inner-route');
+	await expect(page.locator('#layout-to-escape')).toBeVisible();
+	await expect(page.locator('#layout-to-escape-inner-route')).toBeVisible();
+
+	// Navigate to escaped route, make sure layout is gone
+	await page.goto('/layout-to-escape/escape');
+	await expect(page.locator('#layout-to-escape')).not.toBeVisible();
+	await expect(page.locator('#escaped-route')).toBeVisible();
+
+	// Navigate to the other escaped route, make sure layout is gone and the new one is present
+	await page.goto('/layout-to-escape/escape-to-other');
+	await expect(page.locator('#layout-to-escape')).not.toBeVisible();
+	await expect(page.locator('#other-layout-to-escape-to')).toBeVisible();
+	await expect(page.locator('#escape-to-other-layout')).toBeVisible();
+
+	// make sure the route we escaped to is still fine
+	await page.goto('/other-layout-to-escape-to/inner-route');
+	await expect(page.locator('#other-layout-to-escape-to')).toBeVisible();
+	await expect(page.locator('#other-layout-to-escape-to-inner-route')).toBeVisible();
+
+	// make sure the 404 route also is able to escape the layout
+	await page.goto('/layout-to-escape/non-existent-route');
+	await expect(page.locator('#layout-to-escape')).not.toBeVisible();
+	await expect(page.locator('#other-layout-to-escape-to')).toBeVisible();
+	await expect(page.locator('#escaped-to-other-layout-404')).toBeVisible();
+
+})

@@ -1,19 +1,18 @@
 <script lang="ts">
-	import { BrowserRouter, createWebRouter, Link, Route, Route404, href, Layout, getQueryParams, getRouteParams } from '$lib';
+	import {
+		BrowserRouter, createWebRouter, Link, Route, Route404, href, Layout, getQueryParams, getRouteParams,
+		type LayoutData
+	} from '$lib';
 	import { PageInfo } from '$lib';
 	import PersistenceLayout from './PersistenceLayout.svelte';
 	import { onMount, tick } from 'svelte';
 
 	const router = createWebRouter()
 
-	onMount(async () => {
-		await tick();
-		await tick();
-		console.log(router)
-	})
-
 	// workaround for eslint error
 	type str = string;
+
+	let escapeLayout: LayoutData = $state(undefined!);
 </script>
 
 <!--
@@ -204,5 +203,46 @@ As such, it has some pretty esoteric routes and components for the sake of testi
 		{@render identify('override-layout-param-not-layout')}
 		<span id="override-layout-param-not-layout-value">{getRouteParams().param ?? '(no-value)'}</span>
 	</Route>
+
+	<Layout path="/layout-to-escape">
+		{#snippet layout(children)}
+			{@render identify('layout-to-escape')}
+			{@render children()}
+		{/snippet}
+
+		{#snippet routes()}
+			<Route path=""></Route>
+
+			<Route path="/inner-route">
+				{@render identify('layout-to-escape-inner-route')}
+			</Route>
+
+			<Route path="/escape" container={router}>
+				{@render identify('escaped-route')}
+			</Route>
+
+			<Route path="/escape-to-other" container={escapeLayout}>
+				{@render identify('escape-to-other-layout')}
+			</Route>
+
+			<Route404 container={escapeLayout}>
+				{@render identify('escaped-to-other-layout-404')}
+			</Route404>
+		{/snippet}
+	</Layout>
+
+	<Layout path="/other-layout-to-escape-to" bind:ref={escapeLayout}>
+		{#snippet layout(children)}
+			{@render identify('other-layout-to-escape-to')}
+			{@render children()}
+		{/snippet}
+
+		{#snippet routes()}
+			<Route path="/inner-route">
+				{@render identify('other-layout-to-escape-to-inner-route')}
+			</Route>
+		{/snippet}
+	</Layout>
+
 </BrowserRouter>
 

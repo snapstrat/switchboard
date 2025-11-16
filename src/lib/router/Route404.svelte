@@ -1,33 +1,36 @@
 <svelte:options runes={true} />
 <script lang="ts" module>
   import type { Snippet } from 'svelte';
+	import type { RouteContainer } from '$lib/router/router.svelte';
   export type Route404Props = {
     children: Snippet;
+		container?: RouteContainer;
+
   }
 </script>
 
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-	import { type ApplicationRoute, getLayout, getRouteContainer, getRouter, RoutePath } from '$lib';
+	import { type ApplicationRoute, getLayout, getRouteContainer, getRouter, type LayoutData, RoutePath } from '$lib';
 
-  let { children }: Route404Props = $props();
+  let { children, container }: Route404Props = $props();
 
   let router = getRouter();
 
   let route : ApplicationRoute | undefined;
 
   onMount(() => {
-    const layout = getLayout()
-    const layoutPath = layout?.joinedPath ?? '';
+		const layout = getLayout();
 
-    const container = getRouteContainer();
+		container ??= getRouteContainer();
+
+		const layoutPath = layout?.joinedPath ?? '';
 
     route = {
       path: RoutePath.fromString(layoutPath, true),
       component: children,
-      layout
-    };
-    console.log("Registering 404 route:", route);
+			layout: container.isRouter() ? undefined : container as LayoutData
+		};
     container.registerRoute404(route);
   });
 

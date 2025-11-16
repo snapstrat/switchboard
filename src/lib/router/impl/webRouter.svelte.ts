@@ -44,7 +44,7 @@ class WebRouter implements Router {
 	}
 	public get params(): RouteParams {
 		return this.currentRoute?.queryParams ?? {};
-}
+	}
 	public get queryParams(): RouteParams {
 		return this.currentRoute?.queryParams ?? {};
 	}
@@ -86,7 +86,7 @@ class WebRouter implements Router {
 
 		// create the new active route object
 		const params = this.createParams(path);
-		const queryParamsMap : RouteParams = {};
+		const queryParamsMap: RouteParams = {};
 		url.searchParams.forEach((value, key) => {
 			queryParamsMap[key] = value;
 		});
@@ -123,10 +123,7 @@ class WebRouter implements Router {
 	 */
 	public getRoute(path: string): ApplicationRoute {
 		if (path == '/') {
-			return (
-				this.routes.find((route) => route.path.parts.length === 0) ??
-				this.getBase404()
-			);
+			return this.routes.find((route) => route.path.parts.length === 0) ?? this.getBase404();
 		}
 		// find the route that matches the path
 		const routes = this.findBestFit(path);
@@ -142,8 +139,9 @@ class WebRouter implements Router {
 
 	private getBase404(): ApplicationRoute {
 		// return the global 404 route
-		console.log(this.routes404)
-		return this.routes404.find((route) => route.path instanceof Route404Path && route.path.parts.length == 0)!;
+		return this.routes404.find(
+			(route) => route.path instanceof Route404Path && route.path.parts.length == 0
+		)!;
 	}
 
 	private getClosest404(path: string): ApplicationRoute {
@@ -189,8 +187,10 @@ class WebRouter implements Router {
 	}
 
 	public getAllRoutes(): ApplicationRoute[] {
-		return [...this.routes]
+		return [...this.routes];
 	}
+
+	isRouter(): this is Router { return true; }
 }
 
 /**

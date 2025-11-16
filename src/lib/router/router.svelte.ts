@@ -153,6 +153,12 @@ export interface RouteContainer {
 	 */
 	unregisterRoute(route: ApplicationRoute, layout?: LayoutData): void;
 
+	/**
+	 * Check if this route container is a router.
+	 *
+	 * @returns True if this is a router, false otherwise.
+	 */
+	isRouter(): this is Router;
 }
 
 /**
