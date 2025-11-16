@@ -21,25 +21,24 @@ export class RouteParam {
  * ```
  */
 export class RoutePath {
-  private constructor(
+	protected constructor(
     public readonly parts: readonly RoutePart[],
-    public readonly is404: boolean = false,
   ) {}
 
   public static fromString(path: string, is404: boolean = false): RoutePath {
+		const ctor = is404 ? Route404Path : RoutePath;
     if (path == '/' || path === '') {
-      return new RoutePath([], is404);
+      return new ctor([]);
     }
 		path = RoutePath.normalizePath(path)
-    return new RoutePath(
+    return new ctor(
       path.split('/').map((part) => {
         if (part.startsWith(':')) {
           return new RouteParam(part.substring(1));
         } else {
           return part;
         }
-      }),
-			is404
+      })
     );
   }
 
@@ -48,7 +47,7 @@ export class RoutePath {
   }
 
   public static create404(layout: readonly RoutePart[] = []): RoutePath {
-    return new RoutePath(layout, true);
+    return new Route404Path(layout);
   }
 
 	public static readonly concatPaths = (base: string, ...rest: string[]): string => {
@@ -75,6 +74,23 @@ export class RoutePath {
 			path = path.slice(0, -1); // remove trailing slash
 		}
 		return path;
+	}
+
+	public readonly matches = (path: string): boolean => {
+		const parts = RoutePath.normalizePath(path).split('/');
+		if (parts.length != this.parts.length) return false;
+		return this.parts.every((part, index) => {
+			if (part instanceof RouteParam) return true;
+			return part == parts[index];
+		});
+	}
+}
+
+export class Route404Path extends RoutePath {
+	public constructor(
+		public readonly parts: readonly RoutePart[],
+	) {
+		super(parts);
 	}
 }
 
@@ -111,18 +127,29 @@ export function defaultRouterOptions(): RouterOptions {
 	};
 }
 
+/**
+ * A container for routes, either a router or a layout.
+ */
 export interface RouteContainer {
 	/**
 	 * Create a route.
-	 * @param route
-	 * @param layout
+	 * @param route The route to register.
+	 * @param layout The layout to register the route under.
 	 */
 	registerRoute(route: ApplicationRoute, layout?: LayoutData): void;
 
 	/**
+	 * Create a 404 route.
+	 * @param route The route to register as a 404 route.
+	 * @param layout The layout to register the route under.
+	 */
+	registerRoute404(route: ApplicationRoute, layout?: LayoutData): void;
+
+
+	/**
 	 * Remove a route
-	 * @param route
-	 * @param layout
+	 * @param route The route to unregister.
+	 * @param layout The layout to unregister the route from.
 	 */
 	unregisterRoute(route: ApplicationRoute, layout?: LayoutData): void;
 
@@ -159,7 +186,7 @@ export interface Router extends RouteContainer {
   getRoute(path: string): ApplicationRoute;
 
   /**
-   * Get all routes, except for the 404 route.
+   * Get all routes, including 404 routes.
    */
   getAllRoutes(): ApplicationRoute[];
 
@@ -246,6 +273,13 @@ export function setRouterContext(
 ): void {
   // set the router in the context
   setContext(ROUTER_CONTEXT_KEY, router);
+}
+
+/**
+ * Gets the nearest route container, either a layout or the router.
+ */
+export function getRouteContainer(): RouteContainer {
+	return getLayout() ?? getRouter();
 }
 
 /**

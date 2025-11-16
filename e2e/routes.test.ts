@@ -115,3 +115,19 @@ test('Persistent layout works', async ({ page }) => {
 	await expect(page.locator('#persistence-layout')).toBeVisible();
 	await expect(page.locator('#persistence-404')).toBeVisible();
 });
+
+test('Overriding a layout route parameter with a new route works', async ({ page }) => {
+	await page.goto('/override-layout-param/1234');
+	await expect(page.locator('#override-layout-param')).toBeVisible();
+	await expect(page.locator('#override-layout-param-root')).toBeVisible();
+	await expect(page.locator('#override-layout-param-root-value')).toHaveText('1234');
+
+	await page.goto('/override-layout-param/1234/foo');
+	await expect(page.locator('#override-layout-param')).toBeVisible();
+	await expect(page.locator('#override-layout-param-foo')).toBeVisible();
+	await expect(page.locator('#override-layout-param-foo-value')).toHaveText('1234');
+
+	await page.goto('/override-layout-param/not-layout');
+	await expect(page.locator('#override-layout-param-not-layout')).toBeVisible();
+	await expect(page.locator('#override-layout-param-not-layout-value')).toHaveText('(no-value)');
+})

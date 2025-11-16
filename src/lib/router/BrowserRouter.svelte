@@ -22,8 +22,7 @@ and displays the appropriate component based on the current route.
 
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import Route from './Route.svelte';
-  import { setRouterContext, type LayoutData, getAllLayouts, ROUTE_NOT_FOUND_KEY } from './index';
+  import { setRouterContext, type LayoutData, getAllLayouts, Route404 } from './index';
   import { parseWindowSearchParams } from '$lib/router/internals/paramsUtils';
 
   let { router, children }: PageRouterProps = $props();
@@ -43,10 +42,11 @@ and displays the appropriate component based on the current route.
 
 </script>
 
-<Route path={ROUTE_NOT_FOUND_KEY}>
+<Route404>
+  No Page
   <!-- This is blank because it's simply a fallback in case there is no 404 page -->
   <svelte:fragment />
-</Route>
+</Route404>
 
 {@render children?.()}
 

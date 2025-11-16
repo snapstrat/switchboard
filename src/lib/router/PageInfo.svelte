@@ -8,6 +8,7 @@ Provides a page title and icon for the current route.
 		icon?: string;
 	};
 </script>
+
 <script lang="ts">
 	import { getRouter } from '$lib';
 

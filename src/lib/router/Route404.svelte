@@ -1,18 +1,40 @@
 <svelte:options runes={true} />
-
-<script lang="ts">
-  import Route from './Route.svelte';
+<script lang="ts" module>
   import type { Snippet } from 'svelte';
-  import { PageInfo, ROUTE_NOT_FOUND_KEY } from '$lib';
-
-  type Props = {
+  export type Route404Props = {
     children: Snippet;
-  };
-
-  let { children }: Props = $props();
+  }
 </script>
 
-<Route path={ROUTE_NOT_FOUND_KEY}>
-  <PageInfo title="Page Not Found"/>
-  {@render children()}
-</Route>
+<script lang="ts">
+  import { onDestroy, onMount } from 'svelte';
+	import { type ApplicationRoute, getLayout, getRouteContainer, getRouter, RoutePath } from '$lib';
+
+  let { children }: Route404Props = $props();
+
+  let router = getRouter();
+
+  let route : ApplicationRoute | undefined;
+
+  onMount(() => {
+    const layout = getLayout()
+    const layoutPath = layout?.joinedPath ?? '';
+
+    const container = getRouteContainer();
+
+    route = {
+      path: RoutePath.fromString(layoutPath, true),
+      component: children,
+      layout
+    };
+    console.log("Registering 404 route:", route);
+    container.registerRoute404(route);
+  });
+
+  onDestroy(() => {
+    if (route) {
+      const container = getLayout() ?? router;
+      container.unregisterRoute(route);
+    }
+  })
+</script>

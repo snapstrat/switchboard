@@ -2,8 +2,15 @@
 	import { BrowserRouter, createWebRouter, Link, Route, Route404, href, Layout, getQueryParams, getRouteParams } from '$lib';
 	import { PageInfo } from '$lib';
 	import PersistenceLayout from './PersistenceLayout.svelte';
+	import { onMount, tick } from 'svelte';
 
 	const router = createWebRouter()
+
+	onMount(async () => {
+		await tick();
+		await tick();
+		console.log(router)
+	})
 
 	// workaround for eslint error
 	type str = string;
@@ -15,13 +22,13 @@
 {/snippet}
 
 <BrowserRouter {router}>
-	<Route path="/">
-		{@render identify('root-route')}
-	</Route>
-
 	<Route404>
 		{@render identify('page-not-found')}
 	</Route404>
+
+	<Route path="/">
+		{@render identify('root-route')}
+	</Route>
 
 	<Route path="/overwritten-route">
 		{@render identify('overwritten-route')}
@@ -168,5 +175,28 @@
 		{/snippet}
 	</Layout>
 
+	<Layout path="/override-layout-param/:param">
+		{#snippet routes()}
+			<Route path="/">
+				{@render identify('override-layout-param-root')}
+				<span id="override-layout-param-root-value">{getRouteParams().param}</span>
+			</Route>
+
+			<Route path="/foo">
+				{@render identify('override-layout-param-foo')}
+				<span id="override-layout-param-foo-value">{getRouteParams().param}</span>
+			</Route>
+		{/snippet}
+
+		{#snippet layout(children)}
+			{@render identify('override-layout-param')}
+			{@render children()}
+		{/snippet}
+	</Layout>
+
+	<Route path="/override-layout-param/not-layout">
+		{@render identify('override-layout-param-not-layout')}
+		<span id="override-layout-param-not-layout-value">{getRouteParams().param ?? '(no-value)'}</span>
+	</Route>
 </BrowserRouter>
 

@@ -18,17 +18,25 @@
 
 	const { path, layout: renderer, routes }: LayoutProps = $props();
 
-	const layoutData: LayoutData & { routes: ApplicationRoute[] } = {
-		routes: [],
+	type LayoutInternals = { routes: ApplicationRoute[], _routes: ApplicationRoute[] }
+	const layoutData: LayoutData & LayoutInternals = {
+		_routes: [],
+		get routes() {
+			return this._routes.toReversed();
+		},
 		path: path ? RoutePath.normalizePath(path) : undefined,
 		parent: getLayout(),
 		registerRoute(route: ApplicationRoute) {
 			getRouter().registerRoute(route);
-			this.routes.push(route);
+			this._routes.push(route);
+		},
+		registerRoute404(route: ApplicationRoute) {
+			getRouter().registerRoute404(route);
+			this._routes.push(route);
 		},
 		unregisterRoute(route: ApplicationRoute) {
 			getRouter().unregisterRoute(route);
-			this.routes.splice(this.routes.indexOf(route), 1);
+			this._routes.splice(this.routes.indexOf(route), 1);
 		},
 		renderer,
 		get joinedPath() {

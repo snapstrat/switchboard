@@ -6,14 +6,27 @@ import {
 	type RouteParams,
 	type RouterOptions,
 	RoutePath,
-	ROUTE_NOT_FOUND_KEY
+	Route404Path,
 } from '$lib';
 import { parseWindowSearchParams } from '$lib/router/internals/paramsUtils';
+
 /**
  * A router used for an entire application on the web.
  */
 class WebRouter implements Router {
 	private readonly _routes: ApplicationRoute[] = [];
+	private readonly _routes404: ApplicationRoute[] = [];
+
+	// routes are stored in reverse order for easier matching
+	// the most recently added routes are matched first
+	private get routes() {
+		return this._routes.toReversed();
+	}
+
+	private get routes404() {
+		return this._routes404.toReversed();
+	}
+
 	// this is undefined for a short time during initialization,
 	// after tick() it's always defined.
 	public currentRoute: ActiveRoute = $state.raw(undefined!);
@@ -93,9 +106,13 @@ class WebRouter implements Router {
 
 	public registerRoute(route: ApplicationRoute): void {
 		this._routes.push(route);
+	}
+
+	public registerRoute404(route: ApplicationRoute): void {
+		this._routes404.push(route);
 
 		// switch to the new route if it's a 404 route and the current route is undefined
-		if (this.currentRoute?.route == undefined || this.currentRoute.route.path.is404) {
+		if (this.currentRoute?.route == undefined) {
 			this.switchTo(window.location.pathname, parseWindowSearchParams(), false);
 		}
 	}
@@ -107,38 +124,35 @@ class WebRouter implements Router {
 	public getRoute(path: string): ApplicationRoute {
 		if (path == '/') {
 			return (
-				this._routes.find((route) => route.path.parts.length === 0 && !route.path.is404) ??
+				this.routes.find((route) => route.path.parts.length === 0) ??
 				this.getBase404()
 			);
 		}
 		// find the route that matches the path
-		const routes = this._routes.filter((route) => {
-			return this.matchesPath(route, path);
-		});
+		const routes = this.findBestFit(path);
 
-		return routes[0] ?? this.getClosest404(path)!;
+		return routes ?? this.getClosest404(path)!;
 	}
 
-	private matchesPath(route: ApplicationRoute, path: string): boolean {
-		const parts = RoutePath.normalizePath(path).split('/');
-		if (parts.length != route.path.parts.length) return false;
-		return route.path.parts.every((part, index) => {
-			if (part instanceof RouteParam) return true;
-			return part == parts[index];
+	private findBestFit(path: string): ApplicationRoute | undefined {
+		return this.routes.find((route) => {
+			return route.path.matches(path);
 		});
 	}
+
 	private getBase404(): ApplicationRoute {
 		// return the global 404 route
-		const normalizedKey = RoutePath.normalizePath(ROUTE_NOT_FOUND_KEY)
-		return this._routes.find((route) => route.path.is404 && route.path.parts[0] == normalizedKey)!;
+		console.log(this.routes404)
+		return this.routes404.find((route) => route.path instanceof Route404Path && route.path.parts.length == 0)!;
 	}
 
 	private getClosest404(path: string): ApplicationRoute {
-		const splitPath = RoutePath.normalizePath(path).split('/');
+		// get the path minus the last segment
+		const splitPath = RoutePath.normalizePath(path).split('/').slice(0, -1);
+
 		for (let i = splitPath.length; i >= 0; i--) {
 			const subPath = '/' + splitPath.slice(0, i).join('/');
-			const path404 = RoutePath.concatPaths(subPath, ROUTE_NOT_FOUND_KEY);
-			const route = this._routes.find((route) => this.matchesPath(route, path404));
+			const route = this.routes404.find((route) => route.path.matches(subPath));
 			if (route) {
 				return route;
 			}
@@ -175,7 +189,7 @@ class WebRouter implements Router {
 	}
 
 	public getAllRoutes(): ApplicationRoute[] {
-		return this._routes.filter((it) => !it.path.is404);
+		return [...this.routes]
 	}
 }
 
