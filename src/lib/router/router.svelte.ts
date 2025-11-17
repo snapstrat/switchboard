@@ -244,6 +244,7 @@ export type LayoutSnippet = Snippet<[Snippet]>
 export interface LayoutData extends RouteContainer {
 	path?: string;
 	parent?: LayoutData;
+	canonicalParent?: LayoutData;
 	renderer: LayoutSnippet;
 	notFoundRoute?: ApplicationRoute;
 	joinedPath: string;
@@ -320,6 +321,16 @@ export const getAllLayouts = (layout?: LayoutData): LayoutData[] => {
 	while (layout) {
 		list.push(layout);
 		layout = layout.parent;
+	}
+	return list.reverse();
+}
+
+export const getAllCanonicalLayouts = (layout?: LayoutData): LayoutData[] => {
+	const list : LayoutData[] = []
+	if (!layout) return list;
+	while (layout) {
+		list.push(layout);
+		layout = layout.canonicalParent;
 	}
 	return list.reverse();
 }

@@ -5,7 +5,7 @@
 	} from '$lib';
 	import { PageInfo } from '$lib';
 	import PersistenceLayout from './PersistenceLayout.svelte';
-	import { onMount, tick } from 'svelte';
+	import EscapingLayouts from './EscapingLayouts.svelte';
 
 	const router = createWebRouter()
 
@@ -243,6 +243,8 @@ As such, it has some pretty esoteric routes and components for the sake of testi
 			</Route>
 		{/snippet}
 	</Layout>
+
+	<EscapingLayouts {identify}/>
 
 </BrowserRouter>
 

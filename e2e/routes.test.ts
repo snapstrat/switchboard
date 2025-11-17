@@ -130,7 +130,7 @@ test('Overriding a layout route parameter with a new route works', async ({ page
 	await page.goto('/override-layout-param/not-layout');
 	await expect(page.locator('#override-layout-param-not-layout')).toBeVisible();
 	await expect(page.locator('#override-layout-param-not-layout-value')).toHaveText('(no-value)');
-})
+});
 
 test('Escaping layouts works', async ({ page }) => {
 	// Navigate to layout-to-escape root
@@ -163,5 +163,21 @@ test('Escaping layouts works', async ({ page }) => {
 	await expect(page.locator('#layout-to-escape')).not.toBeVisible();
 	await expect(page.locator('#other-layout-to-escape-to')).toBeVisible();
 	await expect(page.locator('#escaped-to-other-layout-404')).toBeVisible();
+});
 
-})
+test('Escaping Layouts in Layouts works', async ({ page }) => {
+	// Navigate to the nested layout root
+	await page.goto('/layout-escaping/route');
+	await expect(page.locator('#layout-escaping')).toBeVisible();
+	await expect(page.locator('#route')).toBeVisible();
+
+	await page.goto('/layout-escaping/layout-to-change-parent/child-route');
+	await expect(page.locator('#layout-escaping')).not.toBeVisible();
+	await expect(page.locator('#layout-to-change-parent')).toBeVisible();
+	await expect(page.locator('#layout-escaping-other-layout')).toBeVisible();
+	await expect(page.locator('#child-route')).toBeVisible();
+
+	await page.goto('/layout-escaping-other-layout/route');
+	await expect(page.locator('#layout-escaping-other-layout')).toBeVisible();
+	await expect(page.locator('#new-location-route')).toBeVisible();
+});

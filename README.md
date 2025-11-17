@@ -239,3 +239,60 @@ For example, you could create an authenticated route component that checks if a 
     </AuthenticatedRoute>
 </BrowserRouter>
 ```
+
+### Escaping Layouts
+If you need to escape a layout for a specific route, you can set a custom 'container' on any route.
+
+```svelte
+<script lang="ts">
+    import { BrowserRouter, Layout, LayoutData, Route } from '@snapstrat/switchboard';
+    
+    let otherLayout: LayoutData = $state();
+</script>
+
+<BrowserRouter router={your_router_instance}>
+    <Layout path="/app">
+        {#snippet layout(route: Snippet)}
+            <div class="app-layout">
+                <nav>...navigation...</nav>
+                <main>
+                    {@render route()}
+                </main>
+            </div>
+        {/snippet}
+        
+        {#snippet routes()}
+            <Route path="dashboard">
+                <h1>Dashboard</h1>
+            </Route>
+            
+            <Route path="settings">
+                <h1>Settings</h1>
+            </Route>
+            
+            <!-- 
+            container can either be a Router instance or another Layout.
+            setting to whatever your router instance is completely disables the layout. 
+             -->
+            <Route path="/login" container={your_router_instance}>
+                <h1>Login Page</h1>
+            </Route>
+            
+            
+            <!--
+            setting container to another layout makes the route use that layout instead 
+            of the current one.
+            
+            note that this will NOT impact the path; this route still exists 
+            at /app/landing-page, NOT /other/landing-page.
+            -->
+            <Route path="/landing-page" container={outerLayout}>
+                <h1>Landing Page</h1>
+            </Route>
+        {/snippet}
+    </Layout>
+    
+    <Layout path="/other" bind:ref={otherLayout}>
+        <!-- another layout... -->
+    </Layout>
+</BrowserRouter>

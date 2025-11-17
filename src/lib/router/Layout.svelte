@@ -1,11 +1,12 @@
 <script lang="ts" module>
 
 	import type { Snippet } from 'svelte';
-	import type { LayoutSnippet } from '$lib/router/router.svelte';
+	import type { LayoutSnippet, RouteContainer } from '$lib/router/router.svelte';
 
 	export type LayoutProps = {
-		path?: string;
+		path: string;
 		layout: LayoutSnippet;
+		container?: RouteContainer;
 		routes: Snippet;
 		ref?: LayoutData;
 	}
@@ -14,8 +15,7 @@
 <script lang="ts">
 
 	import {
-		type ApplicationRoute,
-		getAllLayouts,
+		type ApplicationRoute, getAllCanonicalLayouts,
 		getLayout,
 		getRouter,
 		type LayoutData,
@@ -25,16 +25,27 @@
 	import { setLayoutContext } from '$lib';
 	import { onDestroy } from 'svelte';
 
-	let { path, layout: renderer, routes, ref = $bindable() }: LayoutProps = $props();
+	let { path, layout: renderer, container, routes, ref = $bindable() }: LayoutProps = $props();
 
 	type LayoutInternals = { routes: ApplicationRoute[], _routes: ApplicationRoute[] }
+
+	let parent: LayoutData | undefined;
+	console.log({ parent })
+	if (!container) {
+		parent = getLayout();
+	} else {
+		parent = container.isRouter() ? undefined : container as LayoutData;
+	}
+	console.log(`Layout parent for ${path}:`, parent)
+
 	const layoutData: LayoutData & LayoutInternals = {
 		_routes: [],
 		get routes() {
 			return this._routes.toReversed();
 		},
 		path: path ? RoutePath.normalizePath(path) : undefined,
-		parent: getLayout(),
+		parent,
+		canonicalParent: getLayout(),
 		registerRoute(route: ApplicationRoute) {
 			getRouter().registerRoute(route);
 			this._routes.push(route);
@@ -49,16 +60,16 @@
 		},
 		renderer,
 		get joinedPath() {
-			return getAllLayouts(this)
+			return getAllCanonicalLayouts(this)
 				.map((l) => l.path)
 				.filter((p) => p !== undefined && p !== '')
 				.join('/');
 		},
 		isRouter(): this is Router { return false; }
 	}
-	setLayoutContext(layoutData)
-
 	ref = layoutData;
+
+	setLayoutContext(layoutData);
 
 	onDestroy(() => {
 		setLayoutContext(layoutData.parent);
