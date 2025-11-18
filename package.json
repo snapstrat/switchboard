@@ -16,6 +16,9 @@
 		"test:unit": "vitest",
 		"test:record": "playwright codegen"
 	},
+	"repository": {
+		"url": "https://github.com/snapstrat/switchboard"
+	},
 	"files": [
 		"dist",
 		"!dist/**/*.test.*",
