@@ -17,7 +17,7 @@ Switchboard is designed to be a simple, extensible router for Svelte 5 applicati
 Using composition and a declarative API, developers are able to quickly create SPA routes without the complexity of larger routing libraries, or dealing with SSR.
 
 Switchboard is ideal for applications which:
-- don't require server-side rendering.
+- don't require server-side rendering. See [Use with SvelteKit](#use-with-sveltekit) for more information on using Switchboard with SvelteKit.
 - want a simple, component-based routing solution.
 - want to stray away from strictly file-based routing systems, such as SvelteKit's routing.
 - want more flexibility in defining routes and layouts.
@@ -192,14 +192,32 @@ However, if you navigate to `/user/2`, or `/`, or `/any-other-route-outside-of-t
 </BrowserRouter>
 ```
 
-## Advanced Usage
+## Use with SvelteKit
+Switchboard is primarily designed for client-side routing in Svelte applications, and does NOT support server-side rendering (SSR), nor do we plan to ever support SSR.
+
+However, you can still use Switchboard within a SvelteKit application for client-side routing needs. To do this, you'll need two main things:
+1. A single, top-level SvelteKit route that will serve as the entry point for your Switchboard-powered SPA.
+2. SSR disabled for that route.
+
+In practice, this looks like:
+```
+- /src
+  - /routes
+    - /[...any]            <-- catch-all used to route all traffic your only +page.svelte, containing your Switchboard app
+      - +page.svelte      <-- your Switchboard app goes here
+      - +page.ts          <-- disable SSR here with `export const ssr = false;`
+```
+
+In a normal Svelte application, you don't need to worry about any of this, and can just place a `BrowserRouter` at the root of your component tree (probably in `App.svelte`).
+
+# Advanced Usage
 Advanced usage of Switchboard comes from the natural composition of its components. You can create your own custom route components, layouts, and even
 extend the router itself to add functionality.
 
 Any Route or Layout can be declared anywhere that is within a `BrowserRouter`, or a `Layout` component, and will function as expected, no matter how these
 are nested, constructed, composed, or imported.
 
-### Custom Route Component
+## Custom Route Component
 You can wrap around the `Route` component to create your own custom route components. 
 
 For example, you could create an authenticated route component that checks if a user is logged in before rendering the route.
@@ -240,7 +258,7 @@ For example, you could create an authenticated route component that checks if a 
 </BrowserRouter>
 ```
 
-### Escaping Layouts
+## Escaping Layouts
 If you need to escape a layout for a specific route, you can set a custom 'container' on any route.
 
 ```svelte
@@ -296,3 +314,4 @@ If you need to escape a layout for a specific route, you can set a custom 'conta
         <!-- another layout... -->
     </Layout>
 </BrowserRouter>
+```
