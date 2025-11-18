@@ -38,8 +38,6 @@ and displays the appropriate component based on the current route.
 
   const currentAppRoute = $derived(router.currentRoute?.route);
   const layouts = $derived(getAllLayouts(currentAppRoute?.layout));
-
-  $inspect(layouts);
 </script>
 
 <Route404>

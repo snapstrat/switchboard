@@ -30,13 +30,11 @@
 	type LayoutInternals = { routes: ApplicationRoute[], _routes: ApplicationRoute[] }
 
 	let parent: LayoutData | undefined;
-	console.log({ parent })
 	if (!container) {
 		parent = getLayout();
 	} else {
 		parent = container.isRouter() ? undefined : container as LayoutData;
 	}
-	console.log(`Layout parent for ${path}:`, parent)
 
 	const layoutData: LayoutData & LayoutInternals = {
 		_routes: [],

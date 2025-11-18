@@ -48,7 +48,6 @@ The children of this component make the content that will be displayed when the 
 			layout: container.isRouter() ? undefined : container as LayoutData
 		};
 		container.registerRoute(route);
-		console.log("Registered route:", route);
   });
 
 	onDestroy(() => {

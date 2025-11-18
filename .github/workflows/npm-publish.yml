@@ -31,9 +31,12 @@ jobs:
         with:
           node-version: 22
           cache: "pnpm"
+          registry-url: 'https://registry.npmjs.org'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Svelte Package
         run: npx svelte-package
       - name: Publish to NPM
-        run: pnpm publish
+        run: pnpm publish --provenance --access public
+        env:
+            NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
