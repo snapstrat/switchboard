@@ -23,7 +23,7 @@ and displays the appropriate component based on the current route.
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { setRouterContext, type LayoutData, getAllLayouts, Route404 } from './index';
-  import { parseWindowSearchParams } from '$lib/router/internals/paramsUtils';
+  import { parseWindowSearchParams } from '$lib/router/internals/windowUtils';
 
   let { router, children }: PageRouterProps = $props();
 
@@ -31,7 +31,7 @@ and displays the appropriate component based on the current route.
     await tick();
     const params = parseWindowSearchParams();
 
-    router.switchTo(window.location.pathname, params);
+    router.switchTo(window.location.pathname, params, false);
   });
 
   setRouterContext(router);

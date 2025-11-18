@@ -26,6 +26,10 @@ As such, it has some pretty esoteric routes and components for the sake of testi
 	<p><strong {id}>{id}</strong></p>
 {/snippet}
 
+{#snippet linkTo(path: str)}
+	<Link href={path} id="link-to-{path.replaceAll('/', '-')}">Go to {path}</Link>
+{/snippet}
+
 <BrowserRouter {router}>
 	<Route404>
 		{@render identify('page-not-found')}
@@ -33,6 +37,7 @@ As such, it has some pretty esoteric routes and components for the sake of testi
 
 	<Route path="/">
 		{@render identify('root-route')}
+		{@render linkTo("/overwritten-route")}
 	</Route>
 
 	<Route path="/overwritten-route">
@@ -41,6 +46,7 @@ As such, it has some pretty esoteric routes and components for the sake of testi
 
 	<Route path="/overwritten-route">
 		{@render identify('overwritten-route-2')}
+		{@render linkTo("/route-params/foo/bar")}
 	</Route>
 
 	<Route path="/links/component/start">
@@ -72,6 +78,9 @@ As such, it has some pretty esoteric routes and components for the sake of testi
 			<li id="param1">{getRouteParams().param1}</li>
 			<li id="param2">{getRouteParams().param2}</li>
 		</ul>
+
+		{@render linkTo("/")}
+
 	</Route>
 
 	<Route path="/query-params">

@@ -8,7 +8,12 @@ import {
 	RoutePath,
 	Route404Path,
 } from '$lib';
-import { parseWindowSearchParams } from '$lib/router/internals/paramsUtils';
+import { createSelector, parseWindowSearchParams } from '$lib/router/internals/windowUtils';
+import { tick } from 'svelte';
+
+type HistoryState = {
+	focusedElement?: string;
+}
 
 /**
  * A router used for an entire application on the web.
@@ -37,9 +42,20 @@ class WebRouter implements Router {
 		this.options = Object.freeze(options);
 		// we want to listen to popstate events to update the current route
 		// in this router
-		window.addEventListener('popstate', (ev) => {
+		window.addEventListener('popstate', async (ev) => {
 			ev.preventDefault();
 			this.switchTo(window.location.pathname + window.location.search, {}, false);
+			await tick();
+			// restore focused element if we have one
+			const state = ev.state as HistoryState | null;
+			console.log("ts state", state)
+			if (state?.focusedElement) {
+				console.log(state?.focusedElement);
+				const element = document.querySelector(state.focusedElement) as HTMLElement | null;
+				if (element) {
+					element.focus();
+				}
+			}
 		});
 	}
 	public get params(): RouteParams {
@@ -96,7 +112,15 @@ class WebRouter implements Router {
 			path: url.pathname,
 			queryParams: queryParamsMap
 		};
-		// push a new state if we need to
+
+		const state: HistoryState = {
+			focusedElement: document.activeElement
+				? createSelector(document.activeElement as HTMLElement)
+				: undefined,
+		};
+		// only used for changing focused element
+		window.history.replaceState(state, '')
+
 		if (pushNewState) window.history.pushState({}, '', url);
 
 		this.currentRoute = selectedRoute;
