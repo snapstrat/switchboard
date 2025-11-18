@@ -48,9 +48,7 @@ class WebRouter implements Router {
 			await tick();
 			// restore focused element if we have one
 			const state = ev.state as HistoryState | null;
-			console.log("ts state", state)
 			if (state?.focusedElement) {
-				console.log(state?.focusedElement);
 				const element = document.querySelector(state.focusedElement) as HTMLElement | null;
 				if (element) {
 					element.focus();
