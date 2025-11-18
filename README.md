@@ -17,7 +17,7 @@ Switchboard is designed to be a simple, extensible router for Svelte 5 applicati
 Using composition and a declarative API, developers are able to quickly create SPA routes without the complexity of larger routing libraries, or dealing with SSR.
 
 Switchboard is ideal for applications which:
-- don't require server-side rendering. See [Use with SvelteKit](#use-with-sveltekit) for more information on using Switchboard with SvelteKit.
+- don't require server-side rendering. See [Use with SvelteKit](#use-with-sveltekit) for more info.
 - want a simple, component-based routing solution.
 - want to stray away from strictly file-based routing systems, such as SvelteKit's routing.
 - want more flexibility in defining routes and layouts.
