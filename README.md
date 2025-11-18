@@ -315,3 +315,9 @@ If you need to escape a layout for a specific route, you can set a custom 'conta
     </Layout>
 </BrowserRouter>
 ```
+
+The same principle can be applied to Layouts nested within other Layouts as well, with the same `container` prop, and
+same rules regarding how paths are resolved. 
+
+> [!WARNING]
+> When escaping a layout, you **must** have the layout you're referencing defined above the layout you're escaping from.
