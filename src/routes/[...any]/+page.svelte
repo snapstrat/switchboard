@@ -6,6 +6,7 @@
 	import { PageInfo } from '$lib';
 	import PersistenceLayout from './PersistenceLayout.svelte';
 	import EscapingLayouts from './EscapingLayouts.svelte';
+	import { fly } from 'svelte/transition';
 
 	const router = createWebRouter()
 
@@ -47,6 +48,18 @@ As such, it has some pretty esoteric routes and components for the sake of testi
 	<Route path="/overwritten-route">
 		{@render identify('overwritten-route-2')}
 		{@render linkTo("/route-params/foo/bar")}
+	</Route>
+
+	<Route path="/transition-1">
+		<div transition:fly|global={{ y: 20, duration: 300 }}>
+			helo <Link href="/transition-2">go to 2</Link>
+		</div>
+	</Route>
+
+	<Route path="/transition-2">
+		<div transition:fly|global={{ y: 20, duration: 300 }}>
+			helo from 2 <Link href="/transition-1">go to 1</Link>
+		</div>
 	</Route>
 
 	<Route path="/links/component/start">

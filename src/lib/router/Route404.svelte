@@ -11,13 +11,21 @@
 
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-	import { type ApplicationRoute, getLayout, getRouteContainer, getRouter, type LayoutData, RoutePath } from '$lib';
+	import {
+		type ApplicationRoute,
+		getAllLayouts,
+		getLayout,
+		getRouteContainer,
+		getRouter,
+		type LayoutData,
+		RoutePath
+	} from '$lib';
 
   let { children, container }: Route404Props = $props();
 
   let router = getRouter();
 
-  let route : ApplicationRoute | undefined;
+  let route : ApplicationRoute | undefined = $state.raw();
 
   onMount(() => {
 		const layout = getLayout();
@@ -40,4 +48,25 @@
       container.unregisterRoute(route);
     }
   })
+
+	const currentAppRoute = $derived(router.currentRoute?.route);
+	const layouts = $derived(getAllLayouts(currentAppRoute?.layout));
 </script>
+
+{#snippet layoutRender(remaining: LayoutData[])}
+	{#if remaining.length === 0}
+		{@render currentAppRoute?.component?.()}
+	{:else}
+		{@const next = remaining[0]}
+
+		{#snippet renderer()}
+			{@render layoutRender(remaining.slice(1))}
+		{/snippet}
+
+		{@render next.renderer(renderer)}
+	{/if}
+{/snippet}
+
+{#if currentAppRoute === route}
+	{@render layoutRender(layouts)}
+{/if}

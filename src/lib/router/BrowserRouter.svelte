@@ -46,19 +46,3 @@ and displays the appropriate component based on the current route.
 </Route404>
 
 {@render children?.()}
-
-{#snippet layoutRender(remaining: LayoutData[])}
-  {#if remaining.length === 0}
-    {@render currentAppRoute?.component?.()}
-  {:else}
-    {@const next = remaining[0]}
-
-    {#snippet renderer()}
-      {@render layoutRender(remaining.slice(1))}
-    {/snippet}
-
-    {@render next.renderer(renderer)}
-  {/if}
-{/snippet}
-
-{@render layoutRender(layouts)}
