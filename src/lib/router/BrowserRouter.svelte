@@ -37,7 +37,11 @@ and displays the appropriate component based on the current route.
   setRouterContext(router);
 
   const currentAppRoute = $derived(router.currentRoute?.route);
+  const allRoutes = $derived(router.getAllRoutes());
   const layouts = $derived(getAllLayouts(currentAppRoute?.layout));
+  const lastLayout = $derived(
+    layouts.length > 0 ? layouts[layouts.length - 1] : undefined
+  );
 </script>
 
 <Route404>
@@ -46,3 +50,22 @@ and displays the appropriate component based on the current route.
 </Route404>
 
 {@render children?.()}
+
+{#snippet layoutRender(remaining: LayoutData[])}
+  {#if remaining.length === 0}
+    <!-- We need to render all of these to ensure transitions and lifecycle hooks work correctly -->
+    {#each allRoutes.filter(it => it.layout === lastLayout) as route (route)}
+      {@render route?.component?.()}
+    {/each}
+  {:else}
+    {@const next = remaining[0]}
+
+    {#snippet renderer()}
+      {@render layoutRender(remaining.slice(1))}
+    {/snippet}
+
+    {@render next.renderer(renderer)}
+  {/if}
+{/snippet}
+
+{@render layoutRender(layouts)}

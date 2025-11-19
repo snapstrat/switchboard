@@ -19,8 +19,8 @@ type HistoryState = {
  * A router used for an entire application on the web.
  */
 class WebRouter implements Router {
-	private readonly _routes: ApplicationRoute[] = [];
-	private readonly _routes404: ApplicationRoute[] = [];
+	private _routes: ApplicationRoute[] = $state.raw([]);
+	private _routes404: ApplicationRoute[] = $state.raw([]);
 
 	// routes are stored in reverse order for easier matching
 	// the most recently added routes are matched first
@@ -59,6 +59,7 @@ class WebRouter implements Router {
 	public get params(): RouteParams {
 		return this.currentRoute?.queryParams ?? {};
 	}
+
 	public get queryParams(): RouteParams {
 		return this.currentRoute?.queryParams ?? {};
 	}
@@ -127,11 +128,12 @@ class WebRouter implements Router {
 	}
 
 	public registerRoute(route: ApplicationRoute): void {
-		this._routes.push(route);
+		this._routes = [...this._routes, route];
 	}
 
 	public registerRoute404(route: ApplicationRoute): void {
-		this._routes404.push(route);
+		this._routes404 = [...this._routes404, route];
+
 
 		// switch to the new route if it's a 404 route and the current route is undefined
 		if (this.currentRoute?.route == undefined) {
@@ -209,7 +211,7 @@ class WebRouter implements Router {
 	}
 
 	public getAllRoutes(): ApplicationRoute[] {
-		return [...this.routes];
+		return [...this.routes, ...this.routes404];
 	}
 
 	isRouter(): this is Router { return true; }

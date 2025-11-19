@@ -15,7 +15,7 @@
 <script lang="ts">
 
 	import {
-		type ApplicationRoute, getAllCanonicalLayouts,
+		type ApplicationRoute, getAllCanonicalLayouts, getAllLayouts,
 		getLayout,
 		getRouter,
 		type LayoutData,
@@ -73,7 +73,5 @@
 		setLayoutContext(layoutData.parent);
 	})
 </script>
-
-
 
 {@render routes()}

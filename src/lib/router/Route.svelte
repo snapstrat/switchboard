@@ -44,7 +44,7 @@ The children of this component make the content that will be displayed when the 
 
 		route = {
 			path: RoutePath.fromString(combinedPath),
-			component: children,
+			component: conditionalRender,
 			layout: container.isRouter() ? undefined : container as LayoutData
 		};
 		container.registerRoute(route);
@@ -58,23 +58,10 @@ The children of this component make the content that will be displayed when the 
 	})
 
 	const currentAppRoute = $derived(router.currentRoute?.route);
-	const layouts = $derived(getAllLayouts(currentAppRoute?.layout));
 </script>
 
-{#snippet layoutRender(remaining: LayoutData[])}
-	{#if remaining.length === 0}
-		{@render currentAppRoute?.component?.()}
-	{:else}
-		{@const next = remaining[0]}
-
-		{#snippet renderer()}
-			{@render layoutRender(remaining.slice(1))}
-		{/snippet}
-
-		{@render next.renderer(renderer)}
+{#snippet conditionalRender()}
+	{#if currentAppRoute === route}
+		{@render children?.()}
 	{/if}
 {/snippet}
-
-{#if currentAppRoute === route}
-	{@render layoutRender(layouts)}
-{/if}
