@@ -300,7 +300,8 @@ export function getRouteContainer(): RouteContainer {
 export const href = (href: string): Attachment<HTMLAnchorElement> => {
   const router = getRouter();
 	return (element) => {
-    const handler = () => {
+    const handler = (ev: Event) => {
+			ev.preventDefault()
       router.switchTo(href)
     }
 		element.href = href;

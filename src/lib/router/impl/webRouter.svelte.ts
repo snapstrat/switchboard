@@ -42,6 +42,7 @@ class WebRouter implements Router {
 		this.options = Object.freeze(options);
 		// we want to listen to popstate events to update the current route
 		// in this router
+		// TODO THIS SHOULD NOT BE HERE
 		window.addEventListener('popstate', async (ev) => {
 			ev.preventDefault();
 			this.switchTo(window.location.pathname + window.location.search, {}, false);
