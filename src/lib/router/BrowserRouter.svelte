@@ -58,13 +58,16 @@ and displays the appropriate component based on the current route.
       {@render route?.component?.()}
     {/each}
   {:else}
-    {@const next = remaining[0]}
 
     {#snippet renderer()}
       {@render layoutRender(remaining.slice(1))}
     {/snippet}
 
-    {@render next.renderer(renderer)}
+    {#each remaining as next (next)}
+      {#if next === remaining[0]}
+        {@render next.renderer(renderer)}
+      {/if}
+    {/each}
   {/if}
 {/snippet}
 
