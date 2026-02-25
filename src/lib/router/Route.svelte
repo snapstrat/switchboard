@@ -20,7 +20,7 @@ The children of this component make the content that will be displayed when the 
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import {
-		type ApplicationRoute, getLayout, getRouteContainer, getRouter, type LayoutData, RoutePath
+		type ApplicationRoute, getAllLayouts, getLayout, getRouteContainer, getRouter, type LayoutData, RoutePath
 	} from '$lib';
 
   let {
@@ -31,7 +31,7 @@ The children of this component make the content that will be displayed when the 
 
 	let router = getRouter();
 
-	let route : ApplicationRoute | undefined;
+	let route : ApplicationRoute | undefined = $state.raw();
 
   onMount(() => {
 		const layout = getLayout();
@@ -44,16 +44,24 @@ The children of this component make the content that will be displayed when the 
 
 		route = {
 			path: RoutePath.fromString(combinedPath),
-			component: children,
+			component: conditionalRender,
 			layout: container.isRouter() ? undefined : container as LayoutData
 		};
 		container.registerRoute(route);
   });
 
-	onDestroy(() => {
+	onDestroy(async () => {
 		if (route) {
 			const container = getLayout() ?? router;
 			container.unregisterRoute(route);
 		}
 	})
+
+	const currentAppRoute = $derived(router.currentRoute?.route);
 </script>
+
+{#snippet conditionalRender()}
+	{#if currentAppRoute === route}
+		{@render children?.()}
+	{/if}
+{/snippet}
